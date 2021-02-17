@@ -1,5 +1,4 @@
 # Face Recognition
----
 
 We will be trying different models for performing face recognition.
 
