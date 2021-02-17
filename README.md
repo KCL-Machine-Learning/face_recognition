@@ -1,7 +1,9 @@
-Face Recognition
+# Face Recognition
 ---
 
-# Siamese Neural Network for One Shote Learning
+We will be trying different models for performing face recognition.
+
+## Siamese Neural Network for One Shote Learning
 
 Attempting to build a model to perform face recognition.
 Taking Siamese Network for One Shot Image Verification paper's approach
@@ -15,7 +17,7 @@ the training very slow and not very accurate.
 
 
 
-# Links
+## Links
 
 - Paper: https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf
 - Code taken and modified further from: https://github.com/tensorfreitas/Siamese-Networks-for-One-Shot-Learning
