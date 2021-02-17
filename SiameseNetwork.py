@@ -94,8 +94,6 @@ class SiameseNetwork:
                 tasks.
         """
 
-        summary = tf.Summary()
-
         # Write to log file the values from the last evaluate_every iterations
         for index in range(0, evaluate_each):
             with self.summary_writer.as_default():
@@ -139,7 +137,8 @@ class SiameseNetwork:
 
             # validation set
             count += 1
-            print('Iteration %d/%d: Train loss: %f, Train Accuracy: %f, lr = %f' %
+            if ((iteration+1) % 50) == 0:
+                print('Iteration %d/%d: Train loss: %f, Train Accuracy: %f, lr = %f' %
                   (iteration + 1, number_of_iterations, train_loss, train_accuracy, K.get_value(
                       self.model.optimizer.lr)))
 

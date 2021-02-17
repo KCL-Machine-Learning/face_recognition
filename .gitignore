@@ -1,0 +1,7 @@
+.ipynb_checkpoints/*
+logs/*
+torchenv/*
+venv/*
+part1.zip
+Face Dataset/*
+__pycache__/*

@@ -1,10 +1,16 @@
+
+
 from SiameseNetwork import SiameseNetwork
 
 import os
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
-sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
-# os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+tf.compat.v1.keras.backend.set_session(tf.compat.v1.Session(config=config))
+
+
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 def main():
     dataset_path = 'Face Dataset'

@@ -235,7 +235,7 @@ class FaceLoader:
         available_people = list(self._train_male_faces+self._train_female_faces)
         number_of_people= len(available_people)
 
-        bacth_images_path = []
+        batch_images_path = []
 
         selected_person_indexes = [random.randint(0, number_of_people-1) for i in range(int(self.batch_size/2))]
 
@@ -252,13 +252,13 @@ class FaceLoader:
             # Random select a 3 indexes of images from the same person
             image_indexes = random.sample(range(0, self.example_each_person), 3)
             image = os.path.join(image_path, available_images[image_indexes[0]])
-            bacth_images_path.append(image)
+            batch_images_path.append(image)
             image = os.path.join(image_path, available_images[image_indexes[1]])
-            bacth_images_path.append(image)
+            batch_images_path.append(image)
 
             # Now let's take care of the pair of images from different person
             image = os.path.join(image_path, available_images[image_indexes[2]])
-            bacth_images_path.append(image)
+            batch_images_path.append(image)
             different_people = available_people[:]
             different_people.pop(index)
             different_person_index = random.sample(range(0, number_of_people - 1), 1)
@@ -273,9 +273,9 @@ class FaceLoader:
             image_indexes = random.sample(range(0, self.example_each_person), 1)
             image_path = os.path.join(self.dataset_path, 'Train', different_gender, different_person)
             image = os.path.join(image_path, available_images[image_indexes[0]])
-            bacth_images_path.append(image)
+            batch_images_path.append(image)
 
-        images, labels = self._convert_path_list_to_images_and_labels(bacth_images_path, is_one_shot_task=False)
+        images, labels = self._convert_path_list_to_images_and_labels(batch_images_path, is_one_shot_task=False)
 
         # Get random transforms if augmentation is on
         if self.use_augmentation:
@@ -328,9 +328,9 @@ class FaceLoader:
         image_path = os.path.join(self.dataset_path, image_folder_name, current_gender, current_person)
 
         test_image = os.path.join(image_path, available_images[image_indexes[0]])
-        bacth_images_path.append(test_image)
+        batch_images_path.append(test_image)
         image = os.path.join(image_path, available_images[image_indexes[1]])
-        bacth_images_path.append(image)
+        batch_images_path.append(image)
 
         # Let's get our test image and a pair corresponding to
         if support_set_size == -1:
@@ -357,10 +357,10 @@ class FaceLoader:
 
             image_indexes = random.sample(range(0, self.example_each_person), 1)
             image = os.path.join(image_path, available_images[image_indexes[0]])
-            bacth_images_path.append(test_image)
-            bacth_images_path.append(image)
+            batch_images_path.append(test_image)
+            batch_images_path.append(image)
 
-        images, labels = self._convert_path_list_to_images_and_labels(bacth_images_path, is_one_shot_task=True)
+        images, labels = self._convert_path_list_to_images_and_labels(batch_images_path, is_one_shot_task=True)
 
         return images, labels
 
