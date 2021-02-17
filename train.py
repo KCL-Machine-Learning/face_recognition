@@ -43,6 +43,7 @@ def main():
     evaluate_each = 1000
     number_of_train_iterations = 1000000
 
+
     validation_accuracy = siamese_network.train_network(number_of_iterations=number_of_train_iterations,
                                                                 support_set_size=support_set_size,
                                                                 final_momentum=momentum,
@@ -54,7 +55,7 @@ def main():
     else:
         # Load the weights with best validation accuracy
         siamese_network.model.load_weights('./models/siamese_net_lr10e-4.h5')
-        evaluation_accuracy = siamese_network.omniglot_loader.one_shot_test(siamese_network.model, 20, 40, False)
+        evaluation_accuracy = siamese_network.face_loader.one_shot_test(siamese_network.model, 20, 40, False)
 
     print('Final Evaluation Accuracy = ' + str(evaluation_accuracy))
 

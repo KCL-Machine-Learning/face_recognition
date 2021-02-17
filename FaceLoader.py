@@ -313,7 +313,6 @@ class FaceLoader:
         number_of_people = len(available_people)
 
         batch_images_path = []
-
         test_person_index = random.sample(range(0, number_of_people), 1)
 
         # Get test image
