@@ -95,13 +95,13 @@ class SiameseNetwork:
         """
 
         # Write to log file the values from the last evaluate_every iterations
-        for index in range(0, evaluate_each):
-            with self.summary_writer.as_default():
-                for index in range(0, evaluate_each):
-                    tf.summary.scalar("train_loss", train_losses[index], step=current_iteration - evaluate_each + index + 1)
-                    tf.summary.scalar("train_acc", train_accuracies[index], step=current_iteration - evaluate_each + index + 1)
-                    if index == (evaluate_each - 1):
-                        tf.summary.scalar("one_shot_val_acc", validation_accuracy, step=current_iteration - evaluate_each + index + 1)
+
+        with self.summary_writer.as_default():
+            for index in range(0, evaluate_each):
+                tf.summary.scalar("train_loss", train_losses[index], step=current_iteration - evaluate_each + index + 1)
+                tf.summary.scalar("train_acc", train_accuracies[index], step=current_iteration - evaluate_each + index + 1)
+                if index == (evaluate_each - 1):
+                    tf.summary.scalar("one_shot_val_acc", validation_accuracy, step=current_iteration - evaluate_each + index + 1)
 
         self.summary_writer.flush()
 
