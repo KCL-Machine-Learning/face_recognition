@@ -49,6 +49,7 @@ class FaceLoader:
         self.image_width = 105
         self.image_height = 105
         self.batch_size = batch_size
+        self.num_batch_preload = 500
         self.use_augmentation = use_augmentation
         self.example_each_person = 50
         self._train_male_faces = []
@@ -160,6 +161,9 @@ class FaceLoader:
         self._evaluation_male_faces = list(self.evaluation_dictionary['Male'].keys())
         self._evaluation_female_faces = list(self.evaluation_dictionary['Female'].keys())
 
+        self.preloaded_images, self.preloaded_labels = self.preload_data()
+        self.batch_index = 0
+
     def _convert_path_list_to_images_and_labels(self, path_list, is_one_shot_task):
         """ Loads the images and its correspondent labels from the path
 
@@ -217,27 +221,32 @@ class FaceLoader:
 
         return pairs_of_images, labels
 
-    def get_train_batch(self):
-        """ Loads and returns a batch of train images
+    def preload_data(self):
+        """
 
-        Each batch will iterate over the people list randomly picked
-        and match it with itself as same image, and take another random pick
-        from a different person.
+        Loads data for num_batch_preload times.
+        Each iteration till number of batches, randomly takes the selected person
+        and creates pairs for one batch where half of it labled for same class
+        and the other half is randomly matched with different class.
 
-
+        At the end for preloaded set is shuffled and not necessarily each batch
+        contains 50-50 distribution
 
         Returns:
             pairs_of_images: pairs of images for the current batch
-            labels: correspondent labels -1 for same class, 0 for different classes
+            labels: correspondent labels 1 for same class, 0 for different classes
 
         """
+
+        print("PRELOADING DATA...")
 
         available_people = list(self._train_male_faces+self._train_female_faces)
         number_of_people= len(available_people)
 
-        batch_images_path = []
+        preload_images_path = []
 
-        selected_person_indexes = [random.randint(0, number_of_people-1) for i in range(int(self.batch_size/2))]
+
+        selected_person_indexes = [random.randint(0, number_of_people-1) for i in range(self.num_batch_preload)]
 
         for index in selected_person_indexes:
             current_people = available_people[index]
@@ -249,37 +258,72 @@ class FaceLoader:
             available_images = (self.train_dictionary[current_gender][current_people])
             image_path = os.path.join(self.dataset_path, 'Train', current_gender, current_people)
 
-            # Random select a 3 indexes of images from the same person
-            image_indexes = random.sample(range(0, self.example_each_person), 3)
-            image = os.path.join(image_path, available_images[image_indexes[0]])
-            batch_images_path.append(image)
-            image = os.path.join(image_path, available_images[image_indexes[1]])
-            batch_images_path.append(image)
 
-            # Now let's take care of the pair of images from different person
-            image = os.path.join(image_path, available_images[image_indexes[2]])
-            batch_images_path.append(image)
-            different_people = available_people[:]
-            different_people.pop(index)
-            different_person_index = random.sample(range(0, number_of_people - 1), 1)
+            cur_index = 0
+            same_class = True
+            while cur_index < self.batch_size:
 
-            different_person = different_people[different_person_index[0]]
-            if different_person in self._train_male_faces:
-                different_gender = "Male"
-            else:
-                different_gender = "Female"
+                if same_class:
+                    image = os.path.join(image_path, random.sample(available_images, 1)[0])
+                    preload_images_path.append(image)
+                    image = os.path.join(image_path, random.sample(available_images, 1)[0])
+                    preload_images_path.append(image)
+                else:
+                    image = os.path.join(image_path, random.sample(available_images, 1)[0])
+                    preload_images_path.append(image)
 
-            available_images = self.train_dictionary[different_gender][different_person]
-            image_indexes = random.sample(range(0, self.example_each_person), 1)
-            image_path = os.path.join(self.dataset_path, 'Train', different_gender, different_person)
-            image = os.path.join(image_path, available_images[image_indexes[0]])
-            batch_images_path.append(image)
+                    different_people = available_people[:]
+                    different_people.pop(index)
+                    different_person_index = random.sample(range(0, number_of_people - 1), 1)
 
-        images, labels = self._convert_path_list_to_images_and_labels(batch_images_path, is_one_shot_task=False)
+                    different_person = different_people[different_person_index[0]]
+                    if different_person in self._train_male_faces:
+                        different_gender = "Male"
+                    else:
+                        different_gender = "Female"
+
+                    image = os.path.join(self.dataset_path, 'Train', different_gender, different_person, random.sample(self.train_dictionary[different_gender][different_person], 1)[0])
+                    preload_images_path.append(image)
+
+                same_class = not same_class
+                cur_index += 1
+
+
+        images, labels = self._convert_path_list_to_images_and_labels(preload_images_path, is_one_shot_task=False)
 
         # Get random transforms if augmentation is on
         if self.use_augmentation:
             images = self.image_augmentor.get_random_transform(images)
+
+        print("DATA PRELOADED...")
+
+        return images, labels
+
+    def get_train_batch(self):
+        """ Loads and returns a batch of train images
+
+        Each batch will iterate over the people list randomly picked
+        and match it with itself as same image, and take another random pick
+        from a different person.
+
+
+
+        Returns:
+            pairs_of_images: pairs of images for the current batch
+            labels: correspondent labels 1 for same class, 0 for different classes
+
+        """
+
+        if self.batch_index*32 > self.preloaded_images[0].shape[0]:
+            self.preloaded_images, self.preloaded_labels = self.preload_data()
+            self.batch_index = 0
+
+
+        start_index = self.batch_index*32
+        end_index = min(start_index+32, self.preloaded_images[0].shape[0])
+        images, labels = [self.preloaded_images[0][start_index:end_index],self.preloaded_images[1][start_index:end_index]], self.preloaded_labels[start_index:end_index]
+
+        self.batch_index += 1
 
         return images, labels
 
