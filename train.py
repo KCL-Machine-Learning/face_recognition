@@ -27,7 +27,10 @@ def main():
     l2_param['Dense1'] = 1e-4
 
     # Path where the logs will be saved
-    tensorboard_log_path = './logs/siamese_net_lr10e-4'
+
+    model_name = 'siamese_net_lr10e-4_v2'
+
+    tensorboard_log_path = './logs/'+model_name
     siamese_network = SiameseNetwork(
         dataset_path=dataset_path,
         learning_rate=learning_rate,
@@ -40,7 +43,7 @@ def main():
     # linear epoch slope evolution
     momentum_slope = 0.01
     support_set_size = -1
-    evaluate_each = 1000
+    evaluate_each = 500
     number_of_train_iterations = 1000000
 
 
@@ -49,12 +52,12 @@ def main():
                                                                 final_momentum=momentum,
                                                                 momentum_slope=momentum_slope,
                                                                 evaluate_each=evaluate_each,
-                                                                model_name='siamese_net_lr10e-4')
+                                                                model_name=model_name)
     if validation_accuracy == 0:
         evaluation_accuracy = 0
     else:
         # Load the weights with best validation accuracy
-        siamese_network.model.load_weights('./models/siamese_net_lr10e-4.h5')
+        siamese_network.model.load_weights('./models/'+ model_name +'.h5')
         evaluation_accuracy = siamese_network.face_loader.one_shot_test(siamese_network.model, 20, 40, False)
 
     print('Final Evaluation Accuracy = ' + str(evaluation_accuracy))
