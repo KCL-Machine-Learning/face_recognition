@@ -14,6 +14,20 @@ accuracy is 0.125 for the one shot tasks.
 The dataset is small and FaceLoader is not very effective at the moment making
 the training very slow and not very accurate.
 
+#### Face Loader Preloading 100 batches
+
+Modified Face Loader to preload every 100 batches, where to create the full dataset
+for the 200 batch it randomly picks 100 persons (in our case it will repeat 8 different person randomly)
+
+Afterwards for each person it form pairs for one batch of data, half of it randomly paired with an image of itself
+and another half randomly picking from a different class.
+
+At the end the full preloaded set is shuffled so not necessarily batch at the end contains the same split.
+
+The model was trained like before which led to higher validation accruacy (0.4) but seemed to decrease the
+evalution accuracy to 0.1
+
+
 
 
 ## Links
