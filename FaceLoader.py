@@ -49,7 +49,7 @@ class FaceLoader:
         self.image_width = 105
         self.image_height = 105
         self.batch_size = batch_size
-        self.num_batch_preload = 500
+        self.num_batch_preload = 100
         self.use_augmentation = use_augmentation
         self.example_each_person = 50
         self._train_male_faces = []
