@@ -6,6 +6,10 @@ from PIL import Image
 
 from ImageAugmentor import ImageAugmentor
 
+import h5py
+
+import matplotlib.pyplot as plt
+
 # OmniglotLoader Class taken and modified from:
 #
 class FaceLoader:
@@ -49,7 +53,7 @@ class FaceLoader:
         self.image_width = 105
         self.image_height = 105
         self.batch_size = batch_size
-        self.num_batch_preload = 100
+        self.num_batch_preload = 1
         self.use_augmentation = use_augmentation
         self.example_each_person = 50
         self._train_male_faces = []
@@ -90,7 +94,8 @@ class FaceLoader:
             for person in os.listdir(gender_path):
                 person_path = os.path.join(gender_path, person)
 
-                current_gender_dictionary[person] = os.listdir(person_path)
+                current_gender_dictionary[person] = np.array(h5py.File(os.path.join(person_path, person+".h5"), "r+")["images"]).astype("float64")
+
 
             self.train_dictionary[gender] = current_gender_dictionary
 
@@ -103,7 +108,7 @@ class FaceLoader:
             for person in os.listdir(gender_path):
                 person_path = os.path.join(gender_path, person)
 
-                current_gender_dictionary[person] = os.listdir(person_path)
+                current_gender_dictionary[person] = np.array(h5py.File(os.path.join(person_path, person+".h5"), "r+")["images"]).astype("float64")
 
             self.evaluation_dictionary[gender] = current_gender_dictionary
 
@@ -185,7 +190,7 @@ class FaceLoader:
         number_of_pairs = int(len(path_list) / 2)
         pairs_of_images = [np.zeros(
             (number_of_pairs, self.image_height, self.image_width, 1)) for i in range(2)]
-        labels = np.zeros((number_of_pairs, 1))
+
 
         for pair in range(number_of_pairs):
             image = Image.open(path_list[pair * 2]).convert('L')
@@ -238,16 +243,17 @@ class FaceLoader:
 
         """
 
-        print("PRELOADING DATA...")
+        # print("PRELOADING DATA...")
 
         available_people = list(self._train_male_faces+self._train_female_faces)
         number_of_people= len(available_people)
 
-        preload_images_path = []
 
+        pairs_of_images = [np.zeros((self.batch_size*self.num_batch_preload, self.image_height, self.image_width, 1)) for i in range(2)]
+        labels = np.zeros((self.batch_size*self.num_batch_preload, 1))
 
         selected_person_indexes = [random.randint(0, number_of_people-1) for i in range(self.num_batch_preload)]
-
+        batch_index = 0
         for index in selected_person_indexes:
             current_people = available_people[index]
             if current_people in self._train_male_faces:
@@ -255,49 +261,49 @@ class FaceLoader:
             else:
                 current_gender = "Female"
 
-            available_images = (self.train_dictionary[current_gender][current_people])
-            image_path = os.path.join(self.dataset_path, 'Train', current_gender, current_people)
-
+            available_images = self.train_dictionary[current_gender][current_people]
+            people_index =  [i for i in range(len(available_people))]
+            people_index.pop(index)
+            different_index = [random.sample(people_index, 1)[0] for i in range(self.batch_size)]
 
             cur_index = 0
             same_class = True
             while cur_index < self.batch_size:
-
+                pair = (self.batch_size*batch_index) + cur_index
                 if same_class:
-                    image = os.path.join(image_path, random.sample(available_images, 1)[0])
-                    preload_images_path.append(image)
-                    image = os.path.join(image_path, random.sample(available_images, 1)[0])
-                    preload_images_path.append(image)
+                    imgs_index = random.sample(range(0, self.example_each_person), 2)
+                    pairs_of_images[0][pair, :, : , :] = available_images[imgs_index[0], :, :, :]
+                    pairs_of_images[1][pair, :, : , :] = available_images[imgs_index[1], :, :, :]
+                    labels[pair] = 1
                 else:
-                    image = os.path.join(image_path, random.sample(available_images, 1)[0])
-                    preload_images_path.append(image)
+                    pairs_of_images[0][pair, :, : , :] = available_images[random.randint(0, self.example_each_person-1), :, :, :]
 
-                    different_people = available_people[:]
-                    different_people.pop(index)
-                    different_person_index = random.sample(range(0, number_of_people - 1), 1)
-
-                    different_person = different_people[different_person_index[0]]
+                    different_person = available_people[different_index.pop(0)]
                     if different_person in self._train_male_faces:
                         different_gender = "Male"
                     else:
                         different_gender = "Female"
-
-                    image = os.path.join(self.dataset_path, 'Train', different_gender, different_person, random.sample(self.train_dictionary[different_gender][different_person], 1)[0])
-                    preload_images_path.append(image)
+                    pairs_of_images[1][pair, :, : , :] = self.train_dictionary[different_gender][different_person][random.randint(0, self.example_each_person-1), :, :, :]
+                    labels[pair] = 0
 
                 same_class = not same_class
                 cur_index += 1
 
+            batch_index += 1
 
-        images, labels = self._convert_path_list_to_images_and_labels(preload_images_path, is_one_shot_task=False)
+
+        random_permutation = np.random.permutation(self.batch_size*self.num_batch_preload)
+        labels = labels[random_permutation]
+        pairs_of_images[0][:, :, :, :] = pairs_of_images[0][random_permutation, :, :, :]
+        pairs_of_images[1][:, :, :, :] = pairs_of_images[1][random_permutation, :, :, :]
 
         # Get random transforms if augmentation is on
         if self.use_augmentation:
-            images = self.image_augmentor.get_random_transform(images)
+            pairs_of_images = self.image_augmentor.get_random_transform(pairs_of_images)
 
-        print("DATA PRELOADED...")
+        # print("DATA PRELOADED...")
 
-        return images, labels
+        return pairs_of_images, labels
 
     def get_train_batch(self):
         """ Loads and returns a batch of train images
@@ -314,15 +320,13 @@ class FaceLoader:
 
         """
 
-        if self.batch_index*32 > self.preloaded_images[0].shape[0]:
+        if self.batch_index*self.batch_size >= self.preloaded_images[0].shape[0]:
             self.preloaded_images, self.preloaded_labels = self.preload_data()
             self.batch_index = 0
 
-
-        start_index = self.batch_index*32
-        end_index = min(start_index+32, self.preloaded_images[0].shape[0])
+        start_index = self.batch_index*self.batch_size
+        end_index = min(start_index+self.batch_size, self.preloaded_images[0].shape[0])
         images, labels = [self.preloaded_images[0][start_index:end_index],self.preloaded_images[1][start_index:end_index]], self.preloaded_labels[start_index:end_index]
-
         self.batch_index += 1
 
         return images, labels
@@ -356,7 +360,6 @@ class FaceLoader:
         available_people = male_faces + female_faces
         number_of_people = len(available_people)
 
-        batch_images_path = []
         test_person_index = random.sample(range(0, number_of_people), 1)
 
         # Get test image
@@ -367,45 +370,50 @@ class FaceLoader:
             current_gender = 'Female'
         available_images = dictionary[current_gender][current_person]
 
-        image_indexes = random.sample(range(0, self.example_each_person), 2)
-        image_path = os.path.join(self.dataset_path, image_folder_name, current_gender, current_person)
-
-        test_image = os.path.join(image_path, available_images[image_indexes[0]])
-        batch_images_path.append(test_image)
-        image = os.path.join(image_path, available_images[image_indexes[1]])
-        batch_images_path.append(image)
 
         # Let's get our test image and a pair corresponding to
         if support_set_size == -1:
-            number_of_support_people = number_of_people
+            number_of_support_people = number_of_people-1
         else:
             number_of_support_people = support_set_size
 
+        if number_of_people-1 < number_of_support_people:
+            number_of_support_people = number_of_people-1
+
+        pairs_of_images = [np.zeros((number_of_support_people+1, self.image_height, self.image_width, 1)) for i in range(2)]
+        labels = np.zeros((number_of_support_people+1, 1))
+
+        image_indexes = random.sample(range(0, self.example_each_person), 2)
+
+
+        pairs_of_images[0][0, :, :, :] = available_images[image_indexes[0], :, :, :]
+        pairs_of_images[1][0, :, :, :] = available_images[image_indexes[1], :, :, :]
+
+        labels[0] =  1
+
         different_people = available_people[:]
         different_people.pop(test_person_index[0])
+        if number_of_support_people == number_of_people-1:
+            support_people_indexes = different_people
+        else:
+            support_people_indexes = random.sample(different_people, number_of_support_people - 1)
 
-        if number_of_people < number_of_support_people:
-            number_of_support_people = number_of_people
-
-        support_people_indexes = random.sample(range(0, number_of_people - 1), number_of_support_people - 1)
-
-        for index in support_people_indexes:
-            current_person = different_people[index]
+        pair = 1
+        for current_person in support_people_indexes:
             if current_person in male_faces:
                 current_gender = "Male"
             else:
                 current_gender= "Female"
-            available_images = dictionary[current_gender][current_person]
-            image_path = os.path.join(self.dataset_path, image_folder_name, current_gender, current_person)
 
-            image_indexes = random.sample(range(0, self.example_each_person), 1)
-            image = os.path.join(image_path, available_images[image_indexes[0]])
-            batch_images_path.append(test_image)
-            batch_images_path.append(image)
+            pairs_of_images[0][pair, :, :, :] = available_images[image_indexes[0], :, :, :]
+            pairs_of_images[1][pair, :, :, :] = dictionary[current_gender][current_person][random.randint(0, self.example_each_person-1), :, :, :]
 
-        images, labels = self._convert_path_list_to_images_and_labels(batch_images_path, is_one_shot_task=True)
+            labels[pair] = 0
 
-        return images, labels
+            pair += 1
+
+
+        return pairs_of_images, labels
 
     def one_shot_test(self, model, support_set_size, number_of_tries,
                       is_validation):

@@ -1,7 +1,7 @@
 import h5py
 import os
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 import numpy as np
 
@@ -21,7 +21,8 @@ if __name__ == "__main__":
         for i, each in enumerate(imgs):
             if ".h5" in each:
                 continue
-            img = Image.open(os.path.join(cur_dir, each)).convert('L')
+            img = Image.open(os.path.join(cur_dir, each))
+            img = ImageOps.grayscale(img)
             img = img.resize((105, 105), Image.ANTIALIAS)
             img = np.asarray(img).astype(np.float64)
             img = img / img.std() - img.mean()
@@ -29,7 +30,7 @@ if __name__ == "__main__":
             img_array[i, :, :, 0] = img
 
             file = h5py.File(os.path.join(cur_dir, each_male+".h5"), "w")
-            dataset = file.create_dataset("images", np.shape(img_array), h5py.h5t.STD_U8BE, img_array)
+            dataset = file.create_dataset("images", np.shape(img_array), data=img_array, dtype='float64')
 
             file.close()
 
@@ -42,7 +43,8 @@ if __name__ == "__main__":
         for i, each in enumerate(imgs):
             if ".h5" in each:
                 continue
-            img = Image.open(os.path.join(cur_dir, each)).convert('L')
+            img = Image.open(os.path.join(cur_dir, each))
+            img = ImageOps.grayscale(img)
             img = img.resize((105, 105), Image.ANTIALIAS)
             img = np.asarray(img).astype(np.float64)
             img = img / img.std() - img.mean()
@@ -50,6 +52,6 @@ if __name__ == "__main__":
             img_array[i, :, :, 0] = img
 
             file = h5py.File(os.path.join(cur_dir, each_female+".h5"), "w")
-            dataset = file.create_dataset("images", np.shape(img_array), h5py.h5t.STD_U8BE, img_array)
+            dataset = file.create_dataset("images", np.shape(img_array), data=img_array, dtype='float64')
 
             file.close()

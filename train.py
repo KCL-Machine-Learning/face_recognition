@@ -16,7 +16,7 @@ def main():
     dataset_path = 'Face Dataset'
     use_augmentation = True
     learning_rate = 10e-4
-    batch_size = 32
+    batch_size = 64
 
     # l2-regularization penalization for each layer
     l2_param = {}
@@ -43,7 +43,7 @@ def main():
     # linear epoch slope evolution
     momentum_slope = 0.01
     support_set_size = -1
-    evaluate_each = 500
+    evaluate_each = 1000
     number_of_train_iterations = 1000000
 
 
