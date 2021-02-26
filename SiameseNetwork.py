@@ -17,7 +17,7 @@ class SiameseNetwork:
     def __init__(self, dataset_path,  learning_rate, batch_size, use_augmentation,
                  l2_param, tensorboard_log_path):
 
-        self.input_shape = (105, 105, 1)
+        self.input_shape = (105, 105, 3)
         self.model = []
 
         self.learning_rate = learning_rate
@@ -137,10 +137,9 @@ class SiameseNetwork:
 
             # validation set
             count += 1
-            if ((iteration+1) % 50) == 0:
-                print('Iteration %d/%d: Train loss: %f, Train Accuracy: %f, lr = %f' %
-                  (iteration + 1, number_of_iterations, train_loss, train_accuracy, K.get_value(
-                      self.model.optimizer.lr)))
+            print('Iteration %d/%d: Train loss: %f, Train Accuracy: %f, lr = %f' %
+              (iteration + 1, number_of_iterations, train_loss, train_accuracy, K.get_value(
+                  self.model.optimizer.lr)))
 
             if (iteration + 1) % evaluate_each == 0:
                 number_of_runs_per_person = 40

@@ -161,7 +161,7 @@ class FaceLoader:
 
         # The remaining alphabets are saved for validation
         self._validation_male_faces = male_people
-        self._validation_female_female_people = female_people
+        self._validation_female_faces = female_people
 
         self._evaluation_male_faces = list(self.evaluation_dictionary['Male'].keys())
         self._evaluation_female_faces = list(self.evaluation_dictionary['Female'].keys())
@@ -169,70 +169,68 @@ class FaceLoader:
         self.preloaded_images, self.preloaded_labels = self.preload_data()
         self.batch_index = 0
 
-    def _convert_path_list_to_images_and_labels(self, path_list, is_one_shot_task):
-        """ Loads the images and its correspondent labels from the path
-
-        Take the list with the path from the current batch, read the images and
-        return the pairs of images and the labels
-        If the batch is from train or validation the labels are alternately 1's and
-        0's. If it is a evaluation set only the first pair has label 1
-
-        Arguments:
-            path_list: list of images to be loaded in this batch
-            is_one_shot_task: flag sinalizing if the batch is for one-shot task or if
-                it is for training
-
-        Returns:
-            pairs_of_images: pairs of images for the current batch
-            labels: correspondent labels -1 for same class, 0 for different classes
-
-        """
-        number_of_pairs = int(len(path_list) / 2)
-        pairs_of_images = [np.zeros(
-            (number_of_pairs, self.image_height, self.image_width, 1)) for i in range(2)]
-
-
-        for pair in range(number_of_pairs):
-            image = Image.open(path_list[pair * 2]).convert('L')
-            image = image.resize((self.image_width, self.image_height), Image.ANTIALIAS)
-            image = np.asarray(image).astype(np.float64)
-            image = image / image.std() - image.mean()
-
-            pairs_of_images[0][pair, :, :, 0] = image
-            image = Image.open(path_list[pair * 2 + 1]).convert('L')
-            image = image.resize((self.image_width, self.image_height), Image.ANTIALIAS)
-            image = np.asarray(image).astype(np.float64)
-            image = image / image.std() - image.mean()
-
-            pairs_of_images[1][pair, :, :, 0] = image
-            if not is_one_shot_task:
-                if (pair + 1) % 2 == 0:
-                    labels[pair] = 0
-                else:
-                    labels[pair] = 1
-            else:
-                if pair == 0:
-                    labels[pair] = 1
-                else:
-                    labels[pair] = 0
-
-        if not is_one_shot_task:
-            random_permutation = np.random.permutation(number_of_pairs)
-            labels = labels[random_permutation]
-            pairs_of_images[0][:, :, :,
-                               :] = pairs_of_images[0][random_permutation, :, :, :]
-            pairs_of_images[1][:, :, :,
-                               :] = pairs_of_images[1][random_permutation, :, :, :]
-
-        return pairs_of_images, labels
+    # def _convert_path_list_to_images_and_labels(self, path_list, is_one_shot_task):
+    #     """ Loads the images and its correspondent labels from the path
+    #
+    #     Take the list with the path from the current batch, read the images and
+    #     return the pairs of images and the labels
+    #     If the batch is from train or validation the labels are alternately 1's and
+    #     0's. If it is a evaluation set only the first pair has label 1
+    #
+    #     Arguments:
+    #         path_list: list of images to be loaded in this batch
+    #         is_one_shot_task: flag sinalizing if the batch is for one-shot task or if
+    #             it is for training
+    #
+    #     Returns:
+    #         pairs_of_images: pairs of images for the current batch
+    #         labels: correspondent labels -1 for same class, 0 for different classes
+    #
+    #     """
+    #     number_of_pairs = int(len(path_list) / 2)
+    #     pairs_of_images = [np.zeros(
+    #         (number_of_pairs, self.image_height, self.image_width, 1)) for i in range(2)]
+    #
+    #
+    #     for pair in range(number_of_pairs):
+    #         image = Image.open(path_list[pair * 2]).convert('L')
+    #         image = image.resize((self.image_width, self.image_height), Image.ANTIALIAS)
+    #         image = np.asarray(image).astype(np.float64)
+    #         image = image / image.std() - image.mean()
+    #
+    #         pairs_of_images[0][pair, :, :, 0] = image
+    #         image = Image.open(path_list[pair * 2 + 1]).convert('L')
+    #         image = image.resize((self.image_width, self.image_height), Image.ANTIALIAS)
+    #         image = np.asarray(image).astype(np.float64)
+    #         image = image / image.std() - image.mean()
+    #
+    #         pairs_of_images[1][pair, :, :, 0] = image
+    #         if not is_one_shot_task:
+    #             if (pair + 1) % 2 == 0:
+    #                 labels[pair] = 0
+    #             else:
+    #                 labels[pair] = 1
+    #         else:
+    #             if pair == 0:
+    #                 labels[pair] = 1
+    #             else:
+    #                 labels[pair] = 0
+    #
+    #     if not is_one_shot_task:
+    #         random_permutation = np.random.permutation(number_of_pairs)
+    #         labels = labels[random_permutation]
+    #         pairs_of_images[0][:, :, :,
+    #                            :] = pairs_of_images[0][random_permutation, :, :, :]
+    #         pairs_of_images[1][:, :, :,
+    #                            :] = pairs_of_images[1][random_permutation, :, :, :]
+    #
+    #     return pairs_of_images, labels
 
     def preload_data(self):
         """
 
         Loads data for num_batch_preload times.
-        Each iteration till number of batches, randomly takes the selected person
-        and creates pairs for one batch where half of it labled for same class
-        and the other half is randomly matched with different class.
+        Keeps half of them paired for same person and half paired with a different person.
 
         At the end for preloaded set is shuffled and not necessarily each batch
         contains 50-50 distribution
@@ -249,48 +247,38 @@ class FaceLoader:
         number_of_people= len(available_people)
 
 
-        pairs_of_images = [np.zeros((self.batch_size*self.num_batch_preload, self.image_height, self.image_width, 1)) for i in range(2)]
+        pairs_of_images = [np.zeros((self.batch_size*self.num_batch_preload, self.image_height, self.image_width, 3)) for i in range(2)]
         labels = np.zeros((self.batch_size*self.num_batch_preload, 1))
 
-        selected_person_indexes = [random.randint(0, number_of_people-1) for i in range(self.num_batch_preload)]
-        batch_index = 0
-        for index in selected_person_indexes:
-            current_people = available_people[index]
-            if current_people in self._train_male_faces:
-                current_gender = "Male"
-            else:
-                current_gender = "Female"
-
-            available_images = self.train_dictionary[current_gender][current_people]
-            people_index =  [i for i in range(len(available_people))]
-            people_index.pop(index)
-            different_index = [random.sample(people_index, 1)[0] for i in range(self.batch_size)]
-
-            cur_index = 0
-            same_class = True
-            while cur_index < self.batch_size:
-                pair = (self.batch_size*batch_index) + cur_index
-                if same_class:
-                    imgs_index = random.sample(range(0, self.example_each_person), 2)
-                    pairs_of_images[0][pair, :, : , :] = available_images[imgs_index[0], :, :, :]
-                    pairs_of_images[1][pair, :, : , :] = available_images[imgs_index[1], :, :, :]
-                    labels[pair] = 1
+        i = 0
+        same = True
+        while i < self.batch_size*self.num_batch_preload:
+            if same == True:
+                person = random.sample(available_people, 1)[0]
+                if person in self._train_male_faces:
+                    gender = "Male"
                 else:
-                    pairs_of_images[0][pair, :, : , :] = available_images[random.randint(0, self.example_each_person-1), :, :, :]
-
-                    different_person = available_people[different_index.pop(0)]
-                    if different_person in self._train_male_faces:
-                        different_gender = "Male"
-                    else:
-                        different_gender = "Female"
-                    pairs_of_images[1][pair, :, : , :] = self.train_dictionary[different_gender][different_person][random.randint(0, self.example_each_person-1), :, :, :]
-                    labels[pair] = 0
-
-                same_class = not same_class
-                cur_index += 1
-
-            batch_index += 1
-
+                    gender = "Female"
+                pairs_of_images[0][i, :, :, :] = self.train_dictionary[gender][person][random.randint(0, self.example_each_person-1), :, :, :]
+                pairs_of_images[1][i, :, :, :] = self.train_dictionary[gender][person][random.randint(0, self.example_each_person-1), :, :, :]
+                labels[i] = 1
+            else:
+                pp = random.sample(available_people, 2)
+                person1 = pp[0]
+                person2 = pp[1]
+                if person1 in self._train_male_faces:
+                    gender1 = "Male"
+                else:
+                    gender1 = "Female"
+                if person2 in self._train_male_faces:
+                    gender2 = "Male"
+                else:
+                    gender2 = "Female"
+                pairs_of_images[0][i, :, :, :] = self.train_dictionary[gender1][person1][random.randint(0, self.example_each_person-1), :, :, :]
+                pairs_of_images[1][i, :, :, :] = self.train_dictionary[gender2][person2][random.randint(0, self.example_each_person-1), :, :, :]
+                labels[i] = 0
+            i += 1
+            same = not same
 
         random_permutation = np.random.permutation(self.batch_size*self.num_batch_preload)
         labels = labels[random_permutation]
@@ -380,7 +368,7 @@ class FaceLoader:
         if number_of_people-1 < number_of_support_people:
             number_of_support_people = number_of_people-1
 
-        pairs_of_images = [np.zeros((number_of_support_people+1, self.image_height, self.image_width, 1)) for i in range(2)]
+        pairs_of_images = [np.zeros((number_of_support_people+1, self.image_height, self.image_width, 3)) for i in range(2)]
         labels = np.zeros((number_of_support_people+1, 1))
 
         image_indexes = random.sample(range(0, self.example_each_person), 2)
@@ -388,10 +376,16 @@ class FaceLoader:
 
         pairs_of_images[0][0, :, :, :] = available_images[image_indexes[0], :, :, :]
         pairs_of_images[1][0, :, :, :] = available_images[image_indexes[1], :, :, :]
-
         labels[0] =  1
-
+        #
+        # fig = plt.figure()
+        # fig.add_subplot(1, 2, 1)
+        # plt.imshow(pairs_of_images[0][0, :, :, :])
+        # fig.add_subplot(1, 2, 2)
+        # plt.imshow(pairs_of_images[1][0, :, :, :])
+        # plt.show()
         different_people = available_people[:]
+        # print(different_people)
         different_people.pop(test_person_index[0])
         if number_of_support_people == number_of_people-1:
             support_people_indexes = different_people
@@ -407,8 +401,14 @@ class FaceLoader:
 
             pairs_of_images[0][pair, :, :, :] = available_images[image_indexes[0], :, :, :]
             pairs_of_images[1][pair, :, :, :] = dictionary[current_gender][current_person][random.randint(0, self.example_each_person-1), :, :, :]
-
             labels[pair] = 0
+
+            # fig = plt.figure()
+            # fig.add_subplot(1, 2, 1)
+            # plt.imshow(pairs_of_images[0][pair, :, :, :])
+            # fig.add_subplot(1, 2, 2)
+            # plt.imshow(pairs_of_images[1][pair, :, :, :])
+            # plt.show()
 
             pair += 1
 
@@ -428,15 +428,14 @@ class FaceLoader:
 
 
         mean_global_accuracy = 0
-
         for _ in range(number_of_tries):
-            images, _ = self.get_one_shot_batch(support_set_size, is_validation=is_validation)
+            images, _ = self.get_one_shot_batch(-1, is_validation=is_validation)
             probabilities = model.predict_on_batch(images)
-
+            # print(probabilities)
             # Added this condition because noticed that sometimes the outputs
             # of the classifier was almost the same in all images, meaning that
             # the argmax would be always by definition 0.
-            if np.argmax(probabilities) == 0 and probabilities.std()>0.01:
+            if np.argmax(probabilities) == 0 and probabilities.std()>0.001:
                 accuracy = 1.0
             else:
                 accuracy = 0.0
@@ -445,6 +444,6 @@ class FaceLoader:
 
         mean_global_accuracy /= number_of_tries
 
-        print('\nMean global accuracy: ' + str(mean_global_accuracy))
+        print('Mean global accuracy: ' + str(mean_global_accuracy))
 
         return mean_global_accuracy
