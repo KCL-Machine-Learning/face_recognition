@@ -16,7 +16,7 @@ def main():
     dataset_path = 'Face Dataset'
     use_augmentation = True
     learning_rate = 10e-4
-    batch_size = 64
+    batch_size = 128
 
     # l2-regularization penalization for each layer
     l2_param = {}

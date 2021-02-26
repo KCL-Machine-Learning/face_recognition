@@ -435,7 +435,7 @@ class FaceLoader:
             # Added this condition because noticed that sometimes the outputs
             # of the classifier was almost the same in all images, meaning that
             # the argmax would be always by definition 0.
-            if np.argmax(probabilities) == 0 and probabilities.std()>0.001:
+            if np.argmax(probabilities) == 0 and probabilities.std() > 0.0001:
                 accuracy = 1.0
             else:
                 accuracy = 0.0

@@ -27,7 +27,15 @@ At the end the full preloaded set is shuffled so not necessarily batch at the en
 The model was trained like before which led to higher validation accruacy (0.4) but seemed to decrease the
 evalution accuracy to 0.1
 
+#### RGB input instead of grayscale input
 
+Instead of having a grayscale single channel input modified model and loader to take
+rgb images.
+Also modified laoder to take data from hdf5 file instead which improved image read time
+significantly. Preoloading a large batches allows to utilize the GPU shortly more but doesnt really
+save a lot of time as larger the preload longer the wait.
+
+Trained a model where best validation accuracy was 0.3 evaluation accracy was 0.325
 
 
 ## Links
