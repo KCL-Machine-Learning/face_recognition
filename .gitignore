@@ -3,5 +3,8 @@ logs/*
 torchenv/*
 venv/*
 part1.zip
-Face Dataset/*
+Face Dataset/*/*/*/*.jpg
 __pycache__/*
+
+Face Dataset/UTK FACE/*
+Face Dataset/BUPT-Globalface/*
