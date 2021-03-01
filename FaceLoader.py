@@ -247,7 +247,7 @@ class FaceLoader:
         number_of_people= len(available_people)
 
 
-        pairs_of_images = [np.zeros((self.batch_size*self.num_batch_preload, self.image_height, self.image_width, 3)) for i in range(2)]
+        pairs_of_images = [np.zeros((self.batch_size*self.num_batch_preload, self.image_height, self.image_width, 1)) for i in range(2)]
         labels = np.zeros((self.batch_size*self.num_batch_preload, 1))
 
         i = 0
@@ -368,7 +368,7 @@ class FaceLoader:
         if number_of_people-1 < number_of_support_people:
             number_of_support_people = number_of_people-1
 
-        pairs_of_images = [np.zeros((number_of_support_people+1, self.image_height, self.image_width, 3)) for i in range(2)]
+        pairs_of_images = [np.zeros((number_of_support_people+1, self.image_height, self.image_width, 1)) for i in range(2)]
         labels = np.zeros((number_of_support_people+1, 1))
 
         image_indexes = random.sample(range(0, self.example_each_person), 2)

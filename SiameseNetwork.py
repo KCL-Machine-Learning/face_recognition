@@ -7,7 +7,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Conv2D, MaxPool2D, Flatten, Dense, Input, Lambda
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import Adam, SGD
 
 from FaceLoader import FaceLoader
 
@@ -17,7 +17,7 @@ class SiameseNetwork:
     def __init__(self, dataset_path,  learning_rate, batch_size, use_augmentation,
                  l2_param, tensorboard_log_path):
 
-        self.input_shape = (105, 105, 3)
+        self.input_shape = (105, 105, 1)
         self.model = []
 
         self.learning_rate = learning_rate
@@ -51,7 +51,7 @@ class SiameseNetwork:
                            activation='relu',
                            kernel_regularizer=l2(l2_param['Conv4']),
                            name='Conv4'))
-        encoder.add(MaxPool2D())
+        # encoder.add(MaxPool2D())
 
         encoder.add(Flatten())
         encoder.add(Dense(units=4096, activation='sigmoid', kernel_regularizer=l2(l2_param['Dense1']), name='Dense1'))
@@ -70,7 +70,7 @@ class SiameseNetwork:
         self.model = Model(inputs=[input_img_1, input_img_2], outputs=prediction)
 
         optimizer = SGD(lr=self.learning_rate,momentum=0.5,name="SGD")
-
+        # optimizer = Adam(lr=self.learning_rate)
         self.model.compile(loss='binary_crossentropy', metrics=['binary_accuracy'], optimizer=optimizer)
 
     def _write_logs_to_tensorboard(self, current_iteration, train_losses,
@@ -172,7 +172,7 @@ class SiameseNetwork:
                         self.model.save_weights('models/' + model_name + '.h5')
 
             # If accuracy does not improve for 10000 batches stop the training
-            if iteration - best_accuracy_iteration > 25000:
+            if iteration - best_accuracy_iteration > 10000:
                 print('Early Stopping: validation accuracy did not increase for 10000 iterations')
                 print('Best Validation Accuracy = ' + str(best_validation_accuracy))
                 print('Validation Accuracy = ' + str(best_validation_accuracy))

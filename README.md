@@ -2,6 +2,14 @@
 
 We will be trying different models for performing face recognition.
 
+### Model trained with omniglot dataset
+
+Ran the original source code with normal SGD instead of the modified one, where
+the final mean global accuracy was around 0.6475. The model had around 0.125 accuracy
+for face recognition tasks.
+
+Retraining that model on the face dataset helped achieve 0.4 mean evalulation accuracy in the one shot face recognition task.
+
 ## Siamese Neural Network for One Shote Learning
 
 Attempting to build a model to perform face recognition.
