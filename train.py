@@ -14,8 +14,8 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 def main():
     dataset_path = 'Face Dataset'
-    use_augmentation = False
-    learning_rate = 10e-4
+    use_augmentation = True
+    learning_rate = 10e-5
     batch_size = 32
 
     # l2-regularization penalization for each layer
@@ -28,7 +28,7 @@ def main():
 
     # Path where the logs will be saved
 
-    model_name = 'pre_siamese_net_lr10e-4'
+    model_name = 'initialized_weights_siamese_omniglot'
 
     tensorboard_log_path = './logs/'+model_name
     siamese_network = SiameseNetwork(
@@ -46,7 +46,7 @@ def main():
     evaluate_each = 1000
     number_of_train_iterations = 1000000
 
-    siamese_network.model.load_weights('./omniglot/models/siamese_net_lr10e-4.h5')
+    siamese_network.model.load_weights('./omniglot/models/weights_init_siamese_net_lr10e-4.h5')
 
     validation_accuracy = siamese_network.train_network(number_of_iterations=number_of_train_iterations,
                                                                 support_set_size=support_set_size,
@@ -61,7 +61,7 @@ def main():
     else:
         # Load the weights with best validation accuracy
         siamese_network.model.load_weights('./models/'+ model_name +'.h5')
-        siamese_network.face_loader.split_train_dataset()
+        # siamese_network.face_loader.split_train_dataset()
         evaluation_accuracy = siamese_network.face_loader.one_shot_test(siamese_network.model, 20, 40, False)
 
     print('Final Evaluation Accuracy = ' + str(evaluation_accuracy))

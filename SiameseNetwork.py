@@ -28,33 +28,46 @@ class SiameseNetwork:
 
     def _construct_network(self, l2_param):
 
+
         encoder = Sequential()
         encoder.add(Conv2D(filters=64, kernel_size=(10, 10),
                            activation='relu', input_shape=self.input_shape,
                            kernel_regularizer=l2(l2_param['Conv1']),
+                           kernel_initializer=tf.random_normal_initializer(mean=0.0, stddev=10**-2, seed=None),
+                           bias_initializer=tf.random_normal_initializer(mean=0.5, stddev=10**-2, seed=None),
                            name='Conv1'))
         encoder.add(MaxPool2D())
 
         encoder.add(Conv2D(filters=128, kernel_size=(7, 7),
                            activation='relu',
                            kernel_regularizer=l2(l2_param['Conv2']),
+                           kernel_initializer=tf.random_normal_initializer(mean=0.0, stddev=10**-2, seed=None),
+                           bias_initializer=tf.random_normal_initializer(mean=0.5, stddev=10**-2, seed=None),
                            name='Conv2'))
         encoder.add(MaxPool2D())
 
         encoder.add(Conv2D(filters=128, kernel_size=(4, 4),
                            activation='relu',
                            kernel_regularizer=l2(l2_param['Conv3']),
+                           kernel_initializer=tf.random_normal_initializer(mean=0.0, stddev=10**-2, seed=None),
+                           bias_initializer=tf.random_normal_initializer(mean=0.5, stddev=10**-2, seed=None),
                            name='Conv3'))
         encoder.add(MaxPool2D())
 
         encoder.add(Conv2D(filters=256, kernel_size=(4, 4),
                            activation='relu',
                            kernel_regularizer=l2(l2_param['Conv4']),
+                           kernel_initializer=tf.random_normal_initializer(mean=0.0, stddev=10**-2, seed=None),
+                           bias_initializer=tf.random_normal_initializer(mean=0.5, stddev=10**-2, seed=None),
                            name='Conv4'))
         # encoder.add(MaxPool2D())
 
         encoder.add(Flatten())
-        encoder.add(Dense(units=4096, activation='sigmoid', kernel_regularizer=l2(l2_param['Dense1']), name='Dense1'))
+        encoder.add(Dense(units=4096, activation='sigmoid',
+                          kernel_regularizer=l2(l2_param['Dense1']),
+                          kernel_initializer=tf.random_normal_initializer(mean=0.0, stddev=2*(10**-1), seed=None),
+                          bias_initializer=tf.random_normal_initializer(mean=0.5, stddev=10**-2, seed=None),
+                          name='Dense1'))
 
         input_img_1 = Input(self.input_shape)
         input_img_2 = Input(self.input_shape)
@@ -65,11 +78,14 @@ class SiameseNetwork:
         l1_distance_layer = Lambda(lambda tensors: K.abs(tensors[0]-tensors[1]))
         l1_distance = l1_distance_layer([encoded_img_1, encoded_img_2])
 
-        prediction = Dense(units=1, activation='sigmoid')(l1_distance)
+        prediction = Dense(units=1,
+                           kernel_initializer=tf.random_normal_initializer(mean=0.0, stddev=2*(10**-1), seed=None),
+                           bias_initializer=tf.random_normal_initializer(mean=0.5, stddev=10**-2, seed=None),
+                           activation='sigmoid')(l1_distance)
 
         self.model = Model(inputs=[input_img_1, input_img_2], outputs=prediction)
 
-        optimizer = SGD(lr=self.learning_rate,momentum=0.5,name="SGD")
+        optimizer = SGD(lr=self.learning_rate, momentum=0.5,name="SGD")
         # optimizer = Adam(lr=self.learning_rate)
         self.model.compile(loss='binary_crossentropy', metrics=['binary_accuracy'], optimizer=optimizer)
 
@@ -172,8 +188,8 @@ class SiameseNetwork:
                         self.model.save_weights('models/' + model_name + '.h5')
 
             # If accuracy does not improve for 10000 batches stop the training
-            if iteration - best_accuracy_iteration > 10000:
-                print('Early Stopping: validation accuracy did not increase for 10000 iterations')
+            if iteration - best_accuracy_iteration > 20000:
+                print('Early Stopping: validation accuracy did not increase for 20000 iterations')
                 print('Best Validation Accuracy = ' + str(best_validation_accuracy))
                 print('Validation Accuracy = ' + str(best_validation_accuracy))
                 break
