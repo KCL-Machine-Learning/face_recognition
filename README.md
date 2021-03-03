@@ -56,3 +56,5 @@ using `tf.random_normal_initializer`. Training a model from scratch got around 0
 - Paper: https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf
 - Code taken and modified further from: https://github.com/tensorfreitas/Siamese-Networks-for-One-Shot-Learning
 - Small section of data collected from: https://drive.google.com/drive/folders/0B5G8pYUQMNZnLTBVaENWUWdzR0E
+- Trained Models (Face Recognition): https://drive.google.com/drive/folders/17dw7C6rhIUWAKpGcbRabJMKJP7P3ze-I?usp=sharing
+- Trained Models (Omniglot Dataset): https://drive.google.com/drive/folders/1MYU2HJgV5LjqaoeeN_Eq8fLmBJ2FDoJ2?usp=sharing
